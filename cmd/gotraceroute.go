@@ -7,6 +7,9 @@ import (
 	"net"
 	// ip dat
 	"github.com/wangtuanjie/ip17mon"
+	"os"
+	"os/exec"
+	"path/filepath"
 )
 
 func printHop(hop traceroute.TracerouteHop) {
@@ -35,7 +38,8 @@ func address(address [4]byte) string {
 
 // init ip data
 func init() {
-    if err := ip17mon.Init("./17monipdb.dat"); err != nil {
+	exec_path, _ := exec.LookPath(os.Args[0])
+    if err := ip17mon.Init(filepath.Dir(exec_path) + "/17monipdb.dat"); err != nil {
         panic(err)
     }
 }
