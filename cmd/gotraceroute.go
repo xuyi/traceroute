@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"github.com/aeden/traceroute"
 	"net"
+	// ip dat
+	"github.com/wangtuanjie/ip17mon"
 )
 
 func printHop(hop traceroute.TracerouteHop) {
@@ -13,8 +15,15 @@ func printHop(hop traceroute.TracerouteHop) {
 	if hop.Host != "" {
 		hostOrAddr = hop.Host
 	}
+
+	addrLoc, err := ip17mon.Find(fmt.Sprintf("%v", addr))
+	if err != nil {
+        fmt.Println("ip17mon error:", err)
+        return
+    }
+
 	if hop.Success {
-		fmt.Printf("%-3d %v (%v)  %v\n", hop.TTL, hostOrAddr, addr, hop.ElapsedTime)
+		fmt.Printf("%-3d %v (%v) %s  %v\n", hop.TTL, hostOrAddr, addr, LocString(addrLoc), hop.ElapsedTime)
 	} else {
 		fmt.Printf("%-3d *\n", hop.TTL)
 	}
@@ -22,6 +31,17 @@ func printHop(hop traceroute.TracerouteHop) {
 
 func address(address [4]byte) string {
 	return fmt.Sprintf("%v.%v.%v.%v", address[0], address[1], address[2], address[3])
+}
+
+// init ip data
+func init() {
+    if err := ip17mon.Init("./17monipdb.dat"); err != nil {
+        panic(err)
+    }
+}
+
+func LocString(loc *ip17mon.LocationInfo) string {
+	return fmt.Sprintf("%s %s %s %s", loc.Country, loc.Region, loc.City, loc.Isp)
 }
 
 func main() {
@@ -39,7 +59,13 @@ func main() {
 		return
 	}
 
-	fmt.Printf("traceroute to %v (%v), %v hops max, %v byte packets\n", host, ipAddr, options.MaxHops(), options.PacketSize())
+	loc, err := ip17mon.Find(fmt.Sprintf("%v", ipAddr))
+	if err != nil {
+        fmt.Println("ip17mon error:", err)
+        return
+    }
+
+	fmt.Printf("traceroute to %v (%v) %s, %v hops max, %v byte packets Location\n", host, ipAddr, LocString(loc), options.MaxHops(), options.PacketSize())
 
 	c := make(chan traceroute.TracerouteHop, 0)
 	go func() {
